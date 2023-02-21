@@ -1,0 +1,55 @@
+main {
+    max-width: 900px;
+    position: relative;
+    margin: 10px auto;
+    border: 1px solid black;
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  th, td {
+    text-align: center;
+    border-bottom: 2px solid #ddd;
+    padding: 3px;
+  }
+
+.query-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+}
+.query {
+    flex-grow: 1;
+}
+
+.right {
+    text-align: right;
+    display: block;
+}
+
+.left {
+    text-align: left;
+    display: block;
+}
+
+.text {
+    border-radius: 10px;
+    padding: 5px;
+    margin: 5px;
+}
+
+.right .text {
+    background-color: blue;
+    color: white;
+}
+
+.left .text {
+    border: 1px solid black;
+}

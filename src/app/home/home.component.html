@@ -1,0 +1,9 @@
+<main style="overflow: scroll; height: 85%;" #scrollMe [scrollTop]="scrollMe.scrollHeight">
+    <article *ngFor="let string of output" [class]="string.class">
+        <span class="text">{{string.text}}</span>
+    </article>
+</main>
+<form (ngSubmit)="onSubmit()" class="query-bar">
+    <input type="text" placeholder="" name="query" [(ngModel)]="query" class="query"/>
+    <button type="submit"><mat-icon>send</mat-icon></button>
+  </form>
