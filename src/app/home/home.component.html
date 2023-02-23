@@ -1,9 +1,20 @@
-<main style="overflow-y: scroll; height: 85%;" #scrollMe [scrollTop]="scrollMe.scrollHeight">
+<main style="height: 90%;">
+  <div class="title">
+    <a href="https://www.ryanmontville.com/">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <h2>Weather Bot</h2>
+  </div>
+  <section style="overflow-y: scroll; height: 85%;" #scrollMe [scrollTop]="scrollMe.scrollHeight">
     <article *ngFor="let string of output" [class]="string.class">
-        <span class="text">{{string.text}}</span>
+      <span class="text">{{string.text}}</span>
     </article>
+  </section>
 </main>
+
 <form (ngSubmit)="onSubmit()" class="query-bar">
-    <input type="text" placeholder="" name="query" [(ngModel)]="query" class="query" autofocus/>
-    <button type="submit" class="send"><mat-icon>send</mat-icon></button>
-  </form>
+  <input type="text" placeholder="" name="query" [(ngModel)]="query" class="query" autofocus />
+  <button type="submit" class="send">
+    <mat-icon>send</mat-icon>
+  </button>
+</form>
