@@ -159,6 +159,9 @@ export class HomeComponent implements OnInit {
       if (queryL.includes('current') || queryL.includes('this hour')) {
         outputText = outputText + this.current(queryL);
       }
+      if(queryL.includes('week') && !queryL.includes('weekend')){
+        outputText = outputText + this.weekForecast(queryL);
+      }
       if (queryL.includes('weekend')) {
         outputText = outputText + this.weekend(queryL);
       }
@@ -285,15 +288,85 @@ export class HomeComponent implements OnInit {
     return 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
   }
 
+  weekForecast(input: string) {
+    if(input.includes('will it rain')){
+      let dayWillRain: string[] = [];
+      for(let i=0;i<7;i++){
+        if(this.days[i].precipitation_sum>59){
+          dayWillRain.push(this.week[i]);
+        }
+      }
+      let output: string = '';
+      if(dayWillRain.length>0){
+      output = 'It will rain ';
+      for(let i=0;i<dayWillRain.length-1;i++){
+        output = output + dayWillRain[i] + ', ';
+      }
+      output = output + 'and ' + dayWillRain[dayWillRain.length-1] + ' this week.'
+      } else {
+        output = 'It probably will not rain this week.';
+      }
+      return output;
+    } else {
+      let output = '';
+      for(let i=0;i<this.days.length;i++){
+        output = output + this.week[i] + ': ' + this.days[i].temperature_2m_max + 'F ' + this.getCondition(this.days[i].weathercode, true) + ' ';
+      }
+      return output;
+    }
+  }
+
   weekend(input: string) {
-    let startOfWeekend: number = (5 - this.currentDay);
-    if (input.includes('temp')) {
-      return 'Friday will have a high of ' + this.days[startOfWeekend].temperature_2m_max + 'F, Saturday will have a high of ' + this.days[startOfWeekend + 1].temperature_2m_max + 'F and Sunday will have a high of ' + this.days[startOfWeekend + 2].temperature_2m_max + 'F. '
+    let startOfWeekend: number = this.week.indexOf('Friday');
+    let endOfWeekend: number = 0;
+    if(startOfWeekend>3){
+      endOfWeekend = 6;
+    } else {
+      endOfWeekend = startOfWeekend + 2;
     }
-    if (input.includes('precip')) {
-      return 'Friday has a ' + this.days[startOfWeekend].precipitation_sum + '% chance of showers, Saturday has a ' + this.days[startOfWeekend + 1].precipitation_sum + '% chance, and Sunday will have a ' + this.days[startOfWeekend + 2].precipitation_sum + '% chance. '
+    if(input.includes('will it rain')){
+      let dayWillRain: string[] = [];
+      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
+        if(this.days[i].precipitation_sum>59){
+          dayWillRain.push(this.week[i]);
+        }
+      }
+      let output: string = '';
+      if(dayWillRain.length>0){
+      output = 'It will rain ';
+      for(let i=0;i<dayWillRain.length-1;i++){
+        output = output + dayWillRain[i] + ', ';
+      }
+      output = output + 'and ' + dayWillRain[dayWillRain.length-1] + ' this weekend.'
+      } else {
+        output = 'It probably will not rain this weekend.';
+      }
+      return output;
+    } else if (input.includes('temp')) {
+      let output = ''
+      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
+        output = output + this.week[i] + ' will have a high of ' + this.days[i].temperature_2m_max + 'F. ';
+      }
+      return output;
+    } else if (input.includes('precip')) {
+      let output = ''
+      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
+        output = output + this.week[i] + ' has a ' + this.days[i].precipitation_sum + '% chance of showers. ';
+      }
+      return output;
+    } else if(input.includes('uv index')){
+      let output = ''
+      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
+        output = output + this.week[i] + ' will have an index of ' + this.days[i].uv_index_max + '. ';
+      }
+      return output;
+    } else {
+      let output = ''
+      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
+        output = output + this.week[i] + ' will be ' + this.days[startOfWeekend].temperature_2m_max + 'F and ' + this.getCondition(this.days[startOfWeekend].weathercode, true) + ' with a ' + this.days[startOfWeekend].precipitation_sum + '% chance of showers. ';
+      }
+      return output;
     }
-    return 'Friday will be ' + this.days[startOfWeekend].temperature_2m_max + 'F and ' + this.getCondition(this.days[startOfWeekend].weathercode, true) + ' with a ' + this.days[startOfWeekend].precipitation_sum + '% chance of showers, Saturday will be ' + this.days[startOfWeekend + 1].temperature_2m_max + 'F and ' + this.getCondition(this.days[startOfWeekend + 1].weathercode, true) + ' with a ' + this.days[startOfWeekend + 1].precipitation_sum + '% chance of showers, and Sunday will be ' + this.days[startOfWeekend + 2].temperature_2m_max + 'F and ' + this.getCondition(this.days[startOfWeekend + 2].weathercode, true) + 'with a ' + this.days[startOfWeekend + 2].precipitation_sum + '% chance of showers. ';
   }
 
 }
