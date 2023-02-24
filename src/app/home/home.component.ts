@@ -22,7 +22,7 @@ export class HomeComponent implements OnInit {
   daySixHourly: Hourly[] = [];
   days: Daily[] = [];
   query: string = '';
-  output: { text: string, class: string }[] = [{ text: 'Current location is set to Orlando, FL. Type \'change location\' to update.', class: 'left' }];
+  output: { text: string, class: string }[] = [{ text: 'Current location is set to Orlando, FL. \nType \"change location\" to update.\nType \"help\" for the current list of supported commands.', class: 'left' }];
   currentDay: number = 0;
   week: string[] = [];
 
@@ -134,6 +134,13 @@ export class HomeComponent implements OnInit {
         this.lat = 0;
         outputText = 'Please enter location (city and state).'
       }
+      if(queryL.includes('help')){
+        outputText = this.help(queryL);
+      }
+      if(queryL.includes('exit') || queryL.includes('leave') || queryL.includes('quit')){
+        outputText = 'Goodbye.'
+        window.location.href='https://www.ryanmontville.com/';
+      }
       if (queryL.includes('wall of text')) {
         outputText = this.wallOfText();
       }
@@ -151,10 +158,10 @@ export class HomeComponent implements OnInit {
         outputText = outputText + 'Today is ' + day + '. '
       }
       if (queryL.includes('today')) {
-        outputText = outputText + this.today(queryL);
+        outputText = outputText + this.todayForecast(queryL);
       }
       if (queryL.includes('tomorrow')) {
-        outputText = outputText + this.tomorrow(queryL);
+        outputText = outputText + this.tomorrowForecast(queryL);
       }
       if (queryL.includes('current') || queryL.includes('this hour')) {
         outputText = outputText + this.current(queryL);
@@ -163,22 +170,20 @@ export class HomeComponent implements OnInit {
         outputText = outputText + this.weekForecast(queryL);
       }
       if (queryL.includes('weekend')) {
-        outputText = outputText + this.weekend(queryL);
+        outputText = outputText + this.weekendForecast(queryL);
       }
-      if (!queryL.includes('tomorrow') && !queryL.includes('current') && !queryL.includes('today') && !queryL.includes('weekend')) {
-        if (queryL.includes('max')) {
-          outputText = outputText + 'Today\'s max will be ' + this.days[0].temperature_2m_max + 'F. ';
-        }
-        if (queryL.includes('min')) {
-          outputText = outputText + 'Today\'s min will be ' + this.days[0].temperature_2m_min + 'F. ';
-        }
+      if(queryL.includes('sunday') || queryL.includes('monday') || queryL.includes('tuesday') || queryL.includes('wednesday') || queryL.includes('day') || queryL.includes('thursday') || queryL.includes('friday') || queryL.includes('saturday')) {
+        outputText = outputText + this.singleDayForecast(queryL);
+      }
+      if((queryL.includes(' at ' && 'am')) || (queryL.includes(' at ' && 'pm')) || queryL.includes('hourly')) {
+        outputText = outputText + this.hourlyForecast(queryL);
       }
     }
 
     if (outputText != '') {
       this.output.push({ text: outputText, class: 'left' });
     } else {
-      this.output.push({ text: 'Sorry, I don\'t understand. Please try rephrasing.', class: 'left' });
+      this.output.push({ text: 'Sorry, I don\'t understand. Please try rephrasing or type \"help\" for the current list of supported commands. ', class: 'left' });
     }
     this.query = '';
   }
@@ -203,6 +208,13 @@ export class HomeComponent implements OnInit {
     return 'Updating...';
   }
 
+  help(input: string){
+    if(input.includes('location')){
+      return 'Location is currently set to ' + this.location + '. Type \"change location\" to update. '
+    }
+    return 'Current supported commands: \n\n• Current - temperature, weather condition, chance of precipitation, humidity, feels like temperature, forecast \n\n• Today - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, time of sunrise, time of sunset, uv index, today\'s forecast \n\n• Tomorrow - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, time of sunrise, time of sunset, uv index, tomorrow\'s forecast \n\n• Week - will it rain?, highest temperature this week, lowest temperature this week, 7 day forecast \n\n• Weekend - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, weekend forecast \n\n• Hourly - Hourly forecast, Hourly temperature, hourly precipitation, weather at 2pm, temperature at 5am, chance of precipitation at 12pm \n\n• Change location - Currently set to ' + this.location + '\n\n• Exit/Quit - Go back to RyanMontville.com';
+  }
+
   current(input: string) {
     let output = '';
     const currentDate = new Date();
@@ -225,9 +237,51 @@ export class HomeComponent implements OnInit {
     return 'The current temperature is ' + this.dayZeroHourly[currentHour].temperature_2m + 'F, and ' + this.getCondition(this.dayZeroHourly[currentHour].weathercode, true) + ' but it feels like ' + this.dayZeroHourly[currentHour].apparent_temperature + 'F. The humidity is ' + this.dayZeroHourly[currentHour].relativehumidity_2m + '%. '
   }
 
-  tomorrow(input: string) {
+  todayForecast(input: string) {
+    if(input.includes('will it rain')){
+      if(this.days[0].precipitation_sum>60){
+        return 'It might rain today. ';
+      } else {
+        return 'It probably won\'t rain today. ';
+      }
+    }
+    if (input.includes('max')) {
+      return 'Today\'s max temperature will be ' + this.days[0].temperature_2m_max + 'F.';
+    } else if (input.includes('min')) {
+      return 'Today\'s min temperature tomorrow will be ' + this.days[0].temperature_2m_min + 'F.';
+    } else if (input.includes('weather')) {
+      return 'Today\'s forecast includes ' + this.getCondition(this.days[0].weathercode, true) + '.';
+    }
+    if (input.includes('temp')) {
+      return 'Today will have a high of ' + this.days[0].temperature_2m_max + 'F and a low of ' + this.days[0].temperature_2m_min + 'F.';
+    }
+    if (input.includes('precip')) {
+      return 'There is a ' + this.days[0].precipitation_sum + '% of showers.'
+    }
+    if (input.includes('sunrise')) {
+      const tomDate = new Date(this.days[0].sunrise);
+      return 'Sunrise will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + '.';
+    }
+    if (input.includes('sunset')) {
+      const tomDate = new Date(this.days[0].sunset);
+      return 'Sunset will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + '.';
+    }
+    if (input.includes('uv index')) {
+      return 'Tomorrow\'s UV index will be ' + this.days[0].uv_index_max;
+    }
+    return 'Todays forecast includes ' + this.getCondition(this.days[0].weathercode, true) + ' with a high of ' + this.days[0].temperature_2m_max + 'F and a low of ' + this.days[0].temperature_2m_min + 'F. There is a ' + this.days[0].precipitation_sum + '% of showers.';
+  }
+
+  tomorrowForecast(input: string) {
     if (input.includes('what is tomorrow')) {
       return 'Tomorrow will be ' + this.week[1] + '.';
+    }
+    if(input.includes('will it rain')){
+      if(this.days[1].precipitation_sum>60){
+        return 'It might rain tomorrow. ';
+      } else {
+        return 'It probably won\'t rain tomorrow. ';
+      }
     }
     if (input.includes('max')) {
       return 'The max tomorrow will be ' + this.days[1].temperature_2m_max + 'F.';
@@ -256,34 +310,6 @@ export class HomeComponent implements OnInit {
     return 'Tomorrow forecast includes ' + this.getCondition(this.days[1].weathercode, true) + ' with a high of ' + this.days[1].temperature_2m_max + 'F and a low of ' + this.days[1].temperature_2m_min + 'F. There is a ' + this.days[1].precipitation_sum + '% of showers.';
   }
 
-  today(input: string) {
-    if (input.includes('max')) {
-      return 'Today\'s max temperature will be ' + this.days[0].temperature_2m_max + 'F.';
-    } else if (input.includes('min')) {
-      return 'Today\'s min temperature tomorrow will be ' + this.days[0].temperature_2m_min + 'F.';
-    } else if (input.includes('weather')) {
-      return 'Today\'s forecast includes ' + this.getCondition(this.days[0].weathercode, true) + '.';
-    }
-    if (input.includes('temp')) {
-      return 'Today will have a high of ' + this.days[0].temperature_2m_max + 'F and a low of ' + this.days[0].temperature_2m_min + 'F.';
-    }
-    if (input.includes('precip')) {
-      return 'There is a ' + this.days[0].precipitation_sum + '% of showers.'
-    }
-    if (input.includes('sunrise')) {
-      const tomDate = new Date(this.days[0].sunrise);
-      return 'Sunrise will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + '.';
-    }
-    if (input.includes('sunset')) {
-      const tomDate = new Date(this.days[0].sunset);
-      return 'Sunset will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + '.';
-    }
-    if (input.includes('uv index')) {
-      return 'Tomorrow\'s UV index will be ' + this.days[0].uv_index_max;
-    }
-    return 'Todays forecast includes ' + this.getCondition(this.days[0].weathercode, true) + ' with a high of ' + this.days[0].temperature_2m_max + 'F and a low of ' + this.days[0].temperature_2m_min + 'F. There is a ' + this.days[0].precipitation_sum + '% of showers.';
-  }
-
   wallOfText() {
     return 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
   }
@@ -307,16 +333,37 @@ export class HomeComponent implements OnInit {
         output = 'It probably will not rain this week.';
       }
       return output;
-    } else {
+    } else if(input.includes('highest temp')){
+        let temp: number = -9999999;
+        let day: string = '';
+        for(let i=0;i<this.days.length;i++){
+          if(this.days[i].temperature_2m_max>temp){
+            temp = this.days[i].temperature_2m_max;
+            day = this.week[i];
+          }
+        }
+        return 'The highest temperature this week will be ' + temp + 'F on ' + day + '. ';
+    } else if(input.includes('lowest temp')) {
+      let temp: number = 9999999;
+        let day: string = '';
+        for(let i=0;i<this.days.length;i++){
+          if(this.days[i].temperature_2m_min<temp){
+            temp = this.days[i].temperature_2m_min;
+            day = this.week[i];
+          }
+        }
+        return 'The lowest temperature this week will be ' + temp + 'F on ' + day + '. ';
+    } {
       let output = '';
-      for(let i=0;i<this.days.length;i++){
-        output = output + this.week[i] + ': ' + this.days[i].temperature_2m_max + 'F ' + this.getCondition(this.days[i].weathercode, true) + ' ';
+      output = output + this.week[0] + ': ' + this.days[0].temperature_2m_max + 'F ' + this.getCondition(this.days[0].weathercode, true) + ' ';
+      for(let i=1;i<this.days.length;i++){
+        output = output + '\n' + this.week[i] + ': ' + this.days[i].temperature_2m_max + 'F ' + this.getCondition(this.days[i].weathercode, true) + ' ';
       }
       return output;
     }
   }
 
-  weekend(input: string) {
+  weekendForecast(input: string) {
     let startOfWeekend: number = this.week.indexOf('Friday');
     let endOfWeekend: number = 0;
     if(startOfWeekend>3){
@@ -344,29 +391,92 @@ export class HomeComponent implements OnInit {
       return output;
     } else if (input.includes('temp')) {
       let output = ''
-      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
-        output = output + this.week[i] + ' will have a high of ' + this.days[i].temperature_2m_max + 'F. ';
+      for(let i=startOfWeekend;i<endOfWeekend;i++){
+        output = output + this.week[i] + ' will have a high of ' + this.days[i].temperature_2m_max + 'F.\n';
       }
+      output = output + this.week[endOfWeekend] + ' will have a high of ' + this.days[endOfWeekend].temperature_2m_max + 'F. ';
       return output;
     } else if (input.includes('precip')) {
       let output = ''
-      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
-        output = output + this.week[i] + ' has a ' + this.days[i].precipitation_sum + '% chance of showers. ';
+      for(let i=startOfWeekend;i<endOfWeekend;i++){
+        output = output + this.week[i] + ' has a ' + this.days[i].precipitation_sum + '% chance of showers.\n';
       }
+      output = output + this.week[endOfWeekend] + ' has a ' + this.days[endOfWeekend].precipitation_sum + '% chance of showers. ';
       return output;
     } else if(input.includes('uv index')){
       let output = ''
-      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
+      for(let i=startOfWeekend;i<endOfWeekend;i++){
         output = output + this.week[i] + ' will have an index of ' + this.days[i].uv_index_max + '. ';
       }
+      output = output + this.week[endOfWeekend] + ' will have an index of ' + this.days[endOfWeekend].uv_index_max + '. ';
       return output;
     } else {
       let output = ''
-      for(let i=startOfWeekend;i<endOfWeekend+1;i++){
-        output = output + this.week[i] + ' will be ' + this.days[startOfWeekend].temperature_2m_max + 'F and ' + this.getCondition(this.days[startOfWeekend].weathercode, true) + ' with a ' + this.days[startOfWeekend].precipitation_sum + '% chance of showers. ';
+      for(let i=startOfWeekend;i<endOfWeekend;i++){
+        output = output + this.week[i] + ': ' + this.days[i].temperature_2m_max + 'F and ' + this.getCondition(this.days[i].weathercode, true) + ', precipitation ' + this.days[i].precipitation_sum + '%\n';
       }
+      output = output + this.week[endOfWeekend] + ': ' + this.days[endOfWeekend].temperature_2m_max + 'F and ' + this.getCondition(this.days[endOfWeekend].weathercode, true) + ', precipitation ' + this.days[endOfWeekend].precipitation_sum + '% ';
       return output;
     }
+  }
+
+  hourlyForecast(input: string) {
+    let hour: number = 0;
+    let hourStr: string = '';
+    if((!input.includes('am')) || (!input.includes('pm'))){
+      hour = parseInt(input.replace(/\D/g, ''));
+    if(input.includes(hour + 'pm') || input.includes(hour+' pm')){
+      if(hour>12){
+        return 'Please enter time as #am or #pm (# am also supported).';
+      }
+      hourStr = hour + 'pm';
+      hour = hour + 12;
+    } else if(input.includes(hour+'am')|| input.includes(hour+' am')) {
+      if(hour>12){
+        return 'Please enter time as #am or #pm (# am also supported).';
+      }
+      hourStr = hour + 'am';
+    }
+    }
+    if((input.includes('temp') && input.includes('am')) || (input.includes('temp') && input.includes('pm'))){
+      return 'It will be ' + this.dayZeroHourly[hour].temperature_2m + 'F with a feel like of ' + this.dayZeroHourly[hour].apparent_temperature + 'F at ' + hourStr + '. ';
+    } else if(input.includes('hourly precip')) {
+      let output: string = '';
+      output = output + this.dayZeroHourly[0].precipitation + '% at ' + 0;
+      for(let i=1;i<this.dayZeroHourly.length;i++){
+        output = output + '\n' + this.dayZeroHourly[i].precipitation + '% at ' + i;
+      }
+      return output;
+    } else if(input.includes('hourly temp')) {
+      let output: string = '';
+      output = output + this.dayZeroHourly[0].temperature_2m + 'F at ' + 0;
+      for(let i=1;i<this.dayZeroHourly.length;i++){
+        output = output + '\n' + this.dayZeroHourly[i].temperature_2m + 'F at ' + i;
+      }
+      return output;
+    } else if(input.includes('hourly forecast') || input === 'hourly'){
+      let output: string = '';
+      output = output + this.dayZeroHourly[0].temperature_2m + 'F and ' + this.getCondition(this.dayZeroHourly[0].weathercode, true) + ' at ' + 0;
+      for(let i=1;i<this.dayZeroHourly.length;i++){
+        output = output + '\n' + this.dayZeroHourly[i].temperature_2m + 'F and ' + this.getCondition(this.dayZeroHourly[i].weathercode, true) + ' at ' + i;
+      }
+      return output;
+    } else if(!input.includes('hourly')){
+      if(input.includes('temp')){
+        return 'The temperature at ' + hourStr + ' will be ' + this.dayZeroHourly[hour].temperature_2m + 'F with a feels like of ' + this.dayZeroHourly[hour].apparent_temperature + 'F at ' + hourStr + '. ';
+      } else if(input.includes('precip')){
+        return 'There is a ' + this.dayZeroHourly[hour].precipitation + '% chance of showers at ' + hourStr + '. '
+      } else {
+        return 'It will be ' + this.dayZeroHourly[hour].temperature_2m + 'F and ' + this.getCondition(this.dayZeroHourly[hour].weathercode, true) + ' with a ' + this.dayZeroHourly[hour].precipitation + '% chance of precipitation at ' + hourStr;
+      }
+    }
+
+
+    return input + ' has not been implemented yet. Type \"help\" for the list of currently supported commands. ';
+  }
+
+  singleDayForecast(input: string) {
+    return 'Daily forecast coming soon. '
   }
 
 }

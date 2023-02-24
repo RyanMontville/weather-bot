@@ -47,6 +47,7 @@ main {
 
 .text {
     max-width: 300px;
+    white-space: pre-wrap;
 }
 
 ::-webkit-scrollbar {
