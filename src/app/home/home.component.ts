@@ -53,7 +53,6 @@ export class HomeComponent implements OnInit {
     this.dayFiveHourly = [];
     this.daySixHourly = [];
     this.days = [];
-
     this.http.get<Weather>(`https://api.open-meteo.com/v1/forecast?latitude=${this.lat}&longitude=${this.long}&hourly=temperature_2m,relativehumidity_2m,apparent_temperature,precipitation,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York`).subscribe(data => {
       if (data.latitude) {
         this.weather.setLatitude(data.latitude);
@@ -121,6 +120,52 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  getHourFormat(input: number): string {
+    if(input===0){
+      return '12 am';
+    } else if(input<12) {
+      return input + ' am';
+    } else if(input===12){
+      return '12 pm';
+    } else {
+      return (input-12) + ' pm';
+    }
+  }
+
+  getTimeFormat(input: string){
+    const dayDate = new Date(input);
+    let hours: number = dayDate.getHours();
+    let minutes: number = dayDate.getMinutes();
+    let amPm: string = '';
+    if(hours===0){
+      hours = 12;
+      amPm = ' am';
+    } else if(hours<12){
+      amPm = ' am';
+    } else if(hours===12) {
+      amPm = ' pm';
+    } else {
+      hours = hours - 12;
+      amPm = ' pm';
+    }
+    return hours + ':' + minutes + amPm;
+  }
+
+  findIndexOfDay(input: string): number {
+    let dayIndex: number = 42;
+    switch(true){
+      case (input.includes('sunday')): {dayIndex = this.week.indexOf('Sunday');break;}
+      case (input.includes('monday')): {dayIndex = this.week.indexOf('Monday');break;}
+      case (input.includes('tuesday')): {dayIndex = this.week.indexOf('Tuesday');break;}
+      case (input.includes('wednesday')): {dayIndex = this.week.indexOf('Wednesday');break;}
+      case (input.includes('thursday')): {dayIndex = this.week.indexOf('Thursday');break;}
+      case (input.includes('friday')): {dayIndex = this.week.indexOf('Friday');break;}
+      case (input.includes('saturday')): {dayIndex = this.week.indexOf('Saturday');break;}
+      default: {break;}
+    }
+    return dayIndex;
+  }
+
   onSubmit() {
     this.output.push({ text: this.query, class: 'right' });
     let queryL = this.query.toLocaleLowerCase();
@@ -134,17 +179,16 @@ export class HomeComponent implements OnInit {
         this.lat = 0;
         outputText = 'Please enter location (city and state).'
       }
-      if(queryL.includes('help')){
+      if(queryL.includes('help') || queryL.includes('example')){
         outputText = this.help(queryL);
-      }
-      if(queryL.includes('exit') || queryL.includes('leave') || queryL.includes('quit')){
+      } else if((queryL.includes(' at ' && 'am')) || (queryL.includes(' at ' && 'pm')) || queryL.includes('hourly')) {
+        outputText = outputText + this.hourlyForecast(queryL);
+      } else if(queryL.includes('sunday') || queryL.includes('monday') || queryL.includes('tuesday') || queryL.includes('wednesday') || queryL.includes('thursday') || queryL.includes('friday') || queryL.includes('saturday')) {
+        outputText = outputText + this.singleDayForecast(queryL);
+      } else if(queryL.includes('exit') || queryL.includes('leave') || queryL.includes('quit')){
         outputText = 'Goodbye.'
         window.location.href='https://www.ryanmontville.com/';
-      }
-      if (queryL.includes('wall of text')) {
-        outputText = this.wallOfText();
-      }
-      if (queryL.includes('day is it')) {
+      } else if (queryL.includes('day is it')) {
         let day = '';
         switch (this.currentDay) {
           case 0: day = 'Sunday'; break;
@@ -156,27 +200,16 @@ export class HomeComponent implements OnInit {
           default: day = 'Saturday'; break;
         }
         outputText = outputText + 'Today is ' + day + '. '
-      }
-      if (queryL.includes('today')) {
+      } else if(queryL.includes('today')) {
         outputText = outputText + this.todayForecast(queryL);
-      }
-      if (queryL.includes('tomorrow')) {
+      } else if(queryL.includes('tomorrow')) {
         outputText = outputText + this.tomorrowForecast(queryL);
-      }
-      if (queryL.includes('current') || queryL.includes('this hour')) {
+      } else if(queryL.includes('current') || queryL.includes('this hour')) {
         outputText = outputText + this.current(queryL);
-      }
-      if(queryL.includes('week') && !queryL.includes('weekend')){
+      } else if(queryL.includes('week') && !queryL.includes('weekend')){
         outputText = outputText + this.weekForecast(queryL);
-      }
-      if (queryL.includes('weekend')) {
+      } else if(queryL.includes('weekend')) {
         outputText = outputText + this.weekendForecast(queryL);
-      }
-      if(queryL.includes('sunday') || queryL.includes('monday') || queryL.includes('tuesday') || queryL.includes('wednesday') || queryL.includes('day') || queryL.includes('thursday') || queryL.includes('friday') || queryL.includes('saturday')) {
-        outputText = outputText + this.singleDayForecast(queryL);
-      }
-      if((queryL.includes(' at ' && 'am')) || (queryL.includes(' at ' && 'pm')) || queryL.includes('hourly')) {
-        outputText = outputText + this.hourlyForecast(queryL);
       }
     }
 
@@ -210,9 +243,12 @@ export class HomeComponent implements OnInit {
 
   help(input: string){
     if(input.includes('location')){
-      return 'Location is currently set to ' + this.location + '. Type \"change location\" to update. '
+      return 'Location is currently set to ' + this.location + '. Type \"change location\" to update.'
     }
-    return 'Current supported commands: \n\n• Current - temperature, weather condition, chance of precipitation, humidity, feels like temperature, forecast \n\n• Today - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, time of sunrise, time of sunset, uv index, today\'s forecast \n\n• Tomorrow - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, time of sunrise, time of sunset, uv index, tomorrow\'s forecast \n\n• Week - will it rain?, highest temperature this week, lowest temperature this week, 7 day forecast \n\n• Weekend - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, weekend forecast \n\n• Hourly - Hourly forecast, Hourly temperature, hourly precipitation, weather at 2pm, temperature at 5am, chance of precipitation at 12pm \n\n• Change location - Currently set to ' + this.location + '\n\n• Exit/Quit - Go back to RyanMontville.com';
+    if(input.includes('example')){
+      return '\"What is the current temperature?\"\n\n\"What time will sunset be on Tuesday\"\n\n\"Hourly forecast for Thursday\"\n\n\"What will the temperature be at 10 am Friday?\"\n\n\"Will it rain this weekend"\"\n\n\"What does the week\'s forecast look like?\"';
+    }
+    return 'Current supported commands: \n\n• Current - temperature, weather condition, chance of precipitation, humidity, feels like temperature, forecast \n\n• Today - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, time of sunrise, time of sunset, uv index, today\'s forecast \n\n• Tomorrow - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, time of sunrise, time of sunset, uv index, tomorrow\'s forecast \n\n• <Day> - Will it rain on Monday?, max temperature, min temperature, weather condition, chance of precipitation, time of sunrise, time of sunset, uv index, Wednesday\'s forecast \n\n• Week - will it rain?, highest temperature this week, lowest temperature this week, 7 day forecast \n\n• Weekend - Will it rain?, max temperature, min temperature, weather condition, chance of precipitation, weekend forecast \n\n• Hourly - ‘Hourly forecast <day/today/tomorrow>, Hourly temperature <day/today/tomorrow>, hourly precipitation <day/today/tomorrow>, weather at 2pm <day/today/tomorrow>, temperature at 5am <day/today/tomorrow>, chance of precipitation at 12pm <day/today/tomorrow>\n\n• Change location - Currently set to ' + this.location + '\n\n• Exit/Quit - Go back to RyanMontville.com';
   }
 
   current(input: string) {
@@ -220,21 +256,21 @@ export class HomeComponent implements OnInit {
     const currentDate = new Date();
     const currentHour = currentDate.getHours();
     if (input.includes('temp')) {
-      return 'The current temperature is ' + this.dayZeroHourly[currentHour].temperature_2m + 'F. ';
+      return 'The current temperature is ' + this.dayZeroHourly[currentHour].temperature_2m + 'F.';
     }
     if (input.includes('condition')) {
-      return 'It is currently ' + this.getCondition(this.dayZeroHourly[currentHour].weathercode, true) + '. ';
+      return 'It is currently ' + this.getCondition(this.dayZeroHourly[currentHour].weathercode, true) + '.';
     }
     if (input.includes('precip')) {
-      return 'There is currently a ' + this.dayZeroHourly[currentHour].precipitation + '% chance of precipitation. '
+      return 'There is currently a ' + this.dayZeroHourly[currentHour].precipitation + '% chance of precipitation.'
     }
     if (input.includes('humid')) {
-      return 'The current humidity is ' + this.dayZeroHourly[currentHour].relativehumidity_2m + '%. '
+      return 'The current humidity is ' + this.dayZeroHourly[currentHour].relativehumidity_2m + '%.'
     }
     if (input.includes('feel')) {
-      return 'It currently feels like it is ' + this.dayZeroHourly[currentHour].apparent_temperature + 'F. '
+      return 'It currently feels like it is ' + this.dayZeroHourly[currentHour].apparent_temperature + 'F.'
     }
-    return 'The current temperature is ' + this.dayZeroHourly[currentHour].temperature_2m + 'F, and ' + this.getCondition(this.dayZeroHourly[currentHour].weathercode, true) + ' but it feels like ' + this.dayZeroHourly[currentHour].apparent_temperature + 'F. The humidity is ' + this.dayZeroHourly[currentHour].relativehumidity_2m + '%. '
+    return 'The current temperature is ' + this.dayZeroHourly[currentHour].temperature_2m + 'F, and ' + this.getCondition(this.dayZeroHourly[currentHour].weathercode, true) + ' but it feels like ' + this.dayZeroHourly[currentHour].apparent_temperature + 'F. The humidity is ' + this.dayZeroHourly[currentHour].relativehumidity_2m + '%.'
   }
 
   todayForecast(input: string) {
@@ -242,7 +278,7 @@ export class HomeComponent implements OnInit {
       if(this.days[0].precipitation_sum>60){
         return 'It might rain today. ';
       } else {
-        return 'It probably won\'t rain today. ';
+        return 'It probably won\'t rain today.';
       }
     }
     if (input.includes('max')) {
@@ -267,7 +303,7 @@ export class HomeComponent implements OnInit {
       return 'Sunset will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + '.';
     }
     if (input.includes('uv index')) {
-      return 'Tomorrow\'s UV index will be ' + this.days[0].uv_index_max;
+      return 'Today\'s UV index will be ' + this.days[0].uv_index_max;
     }
     return 'Todays forecast includes ' + this.getCondition(this.days[0].weathercode, true) + ' with a high of ' + this.days[0].temperature_2m_max + 'F and a low of ' + this.days[0].temperature_2m_min + 'F. There is a ' + this.days[0].precipitation_sum + '% of showers.';
   }
@@ -280,7 +316,7 @@ export class HomeComponent implements OnInit {
       if(this.days[1].precipitation_sum>60){
         return 'It might rain tomorrow. ';
       } else {
-        return 'It probably won\'t rain tomorrow. ';
+        return 'It probably won\'t rain tomorrow.';
       }
     }
     if (input.includes('max')) {
@@ -308,10 +344,6 @@ export class HomeComponent implements OnInit {
       return 'Tomorrow\'s UV index will be ' + this.days[1].uv_index_max;
     }
     return 'Tomorrow forecast includes ' + this.getCondition(this.days[1].weathercode, true) + ' with a high of ' + this.days[1].temperature_2m_max + 'F and a low of ' + this.days[1].temperature_2m_min + 'F. There is a ' + this.days[1].precipitation_sum + '% of showers.';
-  }
-
-  wallOfText() {
-    return 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
   }
 
   weekForecast(input: string) {
@@ -342,7 +374,7 @@ export class HomeComponent implements OnInit {
             day = this.week[i];
           }
         }
-        return 'The highest temperature this week will be ' + temp + 'F on ' + day + '. ';
+        return 'The highest temperature this week will be ' + temp + 'F on ' + day + '.';
     } else if(input.includes('lowest temp')) {
       let temp: number = 9999999;
         let day: string = '';
@@ -352,7 +384,7 @@ export class HomeComponent implements OnInit {
             day = this.week[i];
           }
         }
-        return 'The lowest temperature this week will be ' + temp + 'F on ' + day + '. ';
+        return 'The lowest temperature this week will be ' + temp + 'F on ' + day + '.';
     } {
       let output = '';
       output = output + this.week[0] + ': ' + this.days[0].temperature_2m_max + 'F ' + this.getCondition(this.days[0].weathercode, true) + ' ';
@@ -394,21 +426,21 @@ export class HomeComponent implements OnInit {
       for(let i=startOfWeekend;i<endOfWeekend;i++){
         output = output + this.week[i] + ' will have a high of ' + this.days[i].temperature_2m_max + 'F.\n';
       }
-      output = output + this.week[endOfWeekend] + ' will have a high of ' + this.days[endOfWeekend].temperature_2m_max + 'F. ';
+      output = output + this.week[endOfWeekend] + ' will have a high of ' + this.days[endOfWeekend].temperature_2m_max + 'F.';
       return output;
     } else if (input.includes('precip')) {
       let output = ''
       for(let i=startOfWeekend;i<endOfWeekend;i++){
         output = output + this.week[i] + ' has a ' + this.days[i].precipitation_sum + '% chance of showers.\n';
       }
-      output = output + this.week[endOfWeekend] + ' has a ' + this.days[endOfWeekend].precipitation_sum + '% chance of showers. ';
+      output = output + this.week[endOfWeekend] + ' has a ' + this.days[endOfWeekend].precipitation_sum + '% chance of showers.';
       return output;
     } else if(input.includes('uv index')){
       let output = ''
       for(let i=startOfWeekend;i<endOfWeekend;i++){
-        output = output + this.week[i] + ' will have an index of ' + this.days[i].uv_index_max + '. ';
+        output = output + this.week[i] + ' will have an index of ' + this.days[i].uv_index_max + '.';
       }
-      output = output + this.week[endOfWeekend] + ' will have an index of ' + this.days[endOfWeekend].uv_index_max + '. ';
+      output = output + this.week[endOfWeekend] + ' will have an index of ' + this.days[endOfWeekend].uv_index_max + '.';
       return output;
     } else {
       let output = ''
@@ -422,6 +454,26 @@ export class HomeComponent implements OnInit {
 
   hourlyForecast(input: string) {
     let hour: number = 0;
+    let dayNum: number = this.findIndexOfDay(input);
+    let dayStr = ' today';
+    let dayHourly = this.dayZeroHourly;
+    if(dayNum===42){
+      dayNum = 0;
+    }
+    switch(dayNum){
+      case 0: {break;}
+      case 1: {dayHourly = this.dayOneHourly;dayStr = ' tomorrow';break;}
+      case 2: {dayHourly = this.dayTwoHourly;dayStr = ' ' + this.week[dayNum];break;}
+      case 3: {dayHourly = this.dayThreeHourly;dayStr = ' ' + this.week[dayNum];break;}
+      case 4: {dayHourly = this.dayFourHourly;dayStr = ' ' + this.week[dayNum];break;}
+      case 5: {dayHourly = this.dayFiveHourly;dayStr = ' ' + this.week[dayNum];break;}
+      case 6: {dayHourly = this.daySixHourly;dayStr = ' ' + this.week[dayNum];break;}
+      default: {break;}
+    }
+    if(input.includes('tomorrow')){
+      dayNum = 1;
+      dayStr = ' tomorrow'
+    }
     let hourStr: string = '';
     if((!input.includes('am')) || (!input.includes('pm'))){
       hour = parseInt(input.replace(/\D/g, ''));
@@ -439,44 +491,68 @@ export class HomeComponent implements OnInit {
     }
     }
     if((input.includes('temp') && input.includes('am')) || (input.includes('temp') && input.includes('pm'))){
-      return 'It will be ' + this.dayZeroHourly[hour].temperature_2m + 'F with a feel like of ' + this.dayZeroHourly[hour].apparent_temperature + 'F at ' + hourStr + '. ';
+      return 'It will be ' + dayHourly[hour].temperature_2m + 'F with a feel like of ' + dayHourly[hour].apparent_temperature + 'F at ' + hourStr + dayStr + '. ';
     } else if(input.includes('hourly precip')) {
       let output: string = '';
-      output = output + this.dayZeroHourly[0].precipitation + '% at ' + 0;
-      for(let i=1;i<this.dayZeroHourly.length;i++){
-        output = output + '\n' + this.dayZeroHourly[i].precipitation + '% at ' + i;
+      output = output + dayHourly[0].precipitation + '% at 12 am' + dayStr + '.';
+      for(let i=1;i<dayHourly.length;i++){
+        output = output + '\n' + dayHourly[i].precipitation + '% at ' + this.getHourFormat(i) + dayStr + '.';
       }
       return output;
     } else if(input.includes('hourly temp')) {
       let output: string = '';
-      output = output + this.dayZeroHourly[0].temperature_2m + 'F at ' + 0;
-      for(let i=1;i<this.dayZeroHourly.length;i++){
-        output = output + '\n' + this.dayZeroHourly[i].temperature_2m + 'F at ' + i;
+      output = output + dayHourly[0].temperature_2m + 'F at 12 am' + dayStr + '.';
+      for(let i=1;i<dayHourly.length;i++){
+        output = output + '\n' + dayHourly[i].temperature_2m + 'F at ' + this.getHourFormat(i) + dayStr + '.';
       }
       return output;
     } else if(input.includes('hourly forecast') || input === 'hourly'){
       let output: string = '';
-      output = output + this.dayZeroHourly[0].temperature_2m + 'F and ' + this.getCondition(this.dayZeroHourly[0].weathercode, true) + ' at ' + 0;
-      for(let i=1;i<this.dayZeroHourly.length;i++){
-        output = output + '\n' + this.dayZeroHourly[i].temperature_2m + 'F and ' + this.getCondition(this.dayZeroHourly[i].weathercode, true) + ' at ' + i;
+      output = output + dayHourly[0].temperature_2m + 'F and ' + this.getCondition(dayHourly[0].weathercode, true) + ' at 12 am' + dayStr + '.';
+      for(let i=1;i<dayHourly.length;i++){
+        output = output + '\n' + dayHourly[i].temperature_2m + 'F and ' + this.getCondition(dayHourly[i].weathercode, true) + ' at ' + this.getHourFormat(i) + dayStr + '.';
       }
       return output;
     } else if(!input.includes('hourly')){
       if(input.includes('temp')){
-        return 'The temperature at ' + hourStr + ' will be ' + this.dayZeroHourly[hour].temperature_2m + 'F with a feels like of ' + this.dayZeroHourly[hour].apparent_temperature + 'F at ' + hourStr + '. ';
+        return 'The temperature at ' + hourStr + ' will be ' + dayHourly[hour].temperature_2m + 'F with a feels like of ' + dayHourly[hour].apparent_temperature + 'F at ' + hourStr + dayStr + '.';
       } else if(input.includes('precip')){
-        return 'There is a ' + this.dayZeroHourly[hour].precipitation + '% chance of showers at ' + hourStr + '. '
+        return 'There is a ' + dayHourly[hour].precipitation + '% chance of showers at ' + hourStr + dayStr + '.';
       } else {
-        return 'It will be ' + this.dayZeroHourly[hour].temperature_2m + 'F and ' + this.getCondition(this.dayZeroHourly[hour].weathercode, true) + ' with a ' + this.dayZeroHourly[hour].precipitation + '% chance of precipitation at ' + hourStr;
+        return 'It will be ' + dayHourly[hour].temperature_2m + 'F and ' + this.getCondition(dayHourly[hour].weathercode, true) + ' with a ' + dayHourly[hour].precipitation + '% chance of precipitation at ' + hourStr + dayStr + '.';
       }
     }
-
-
-    return input + ' has not been implemented yet. Type \"help\" for the list of currently supported commands. ';
+    return input + ' has not been implemented yet. Type \"help\" for the list of currently supported commands.';
   }
 
   singleDayForecast(input: string) {
-    return 'Daily forecast coming soon. '
+    let dayIndex: number = this.findIndexOfDay(input);
+    if(input.includes('will it rain')){
+      if(this.days[dayIndex].precipitation_sum>60){
+        return 'It might rain on ' + this.week[dayIndex] + '.';
+      } else {
+        return 'It probably won\'t rain on ' + this.week[dayIndex] + '.';
+      }
+    }
+    if(input.includes('temp')){
+      return this.week[dayIndex] + ' will have a high of ' + this.days[dayIndex].temperature_2m_max + 'F and a low of ' + this.days[dayIndex].temperature_2m_min + 'F.';
+    }
+    if(input.includes('precip')){
+      return this.week[dayIndex] + ' has a ' + this.days[dayIndex].precipitation_sum + '% chance of showers.';
+    }
+    if(input.includes('uv index')){
+      return this.week[dayIndex] + ' will have a uv index of ' + this.days[dayIndex].uv_index_max + '.';
+    }
+    if(input.includes('weather') || input.includes('forecast')){
+      return this.week[dayIndex] + ' will be ' + this.days[dayIndex].temperature_2m_max + 'F and ' +this.getCondition(this.days[dayIndex].weathercode, true) + ' with a ' + this.days[dayIndex].precipitation_sum + '% chance of showers.';
+    }
+    if(input.includes('sunrise')){
+      return 'Sunrise will be at ' + this.getTimeFormat(this.days[dayIndex].sunrise)  + ' on ' + this.week[dayIndex] + '.';
+    }
+    if(input.includes('sunset')){
+      return 'Sunset will be at ' + this.getTimeFormat(this.days[dayIndex].sunset) + ' on ' + this.week[dayIndex] + '.';
+    }
+    return input + ' has not been implemented yet. Type \"help\" for the list of currently supported commands.'
   }
 
 }

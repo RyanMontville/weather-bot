@@ -3,7 +3,7 @@
     <a href="https://www.ryanmontville.com/">
       <mat-icon>arrow_back</mat-icon>
     </a>
-    <h2>Weather Bot</h2>
+    <h2>Weather Bot | {{location}}</h2>
   </div>
   <section style="overflow-y: scroll; height: 85%;" #scrollMe [scrollTop]="scrollMe.scrollHeight">
     <article *ngFor="let string of output" [class]="string.class">
