@@ -294,11 +294,11 @@ export class HomeComponent implements OnInit {
     if (input.includes('precip')) {
       return 'There is a ' + this.days[0].precipitation_sum + '% of showers.'
     }
-    if (input.includes('sunrise')) {
+    if (input.includes('sunrise') || input.includes('sun rise')) {
       const tomDate = new Date(this.days[0].sunrise);
       return 'Sunrise will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + '.';
     }
-    if (input.includes('sunset')) {
+    if (input.includes('sunset') || input.includes('sun set')) {
       const tomDate = new Date(this.days[0].sunset);
       return 'Sunset will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + '.';
     }
@@ -332,11 +332,11 @@ export class HomeComponent implements OnInit {
     if (input.includes('precip')) {
       return 'There is a ' + this.days[1].precipitation_sum + '% of showers tomorrow.'
     }
-    if (input.includes('sunrise')) {
+    if (input.includes('sunrise') || input.includes('sun rise')) {
       const tomDate = new Date(this.days[1].sunrise);
       return 'Sunrise will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + ' tomorrow.';
     }
-    if (input.includes('sunset')) {
+    if (input.includes('sunset')|| input.includes('sun set')) {
       const tomDate = new Date(this.days[1].sunset);
       return 'Sunset will be at ' + tomDate.getHours() + ':' + tomDate.getMinutes() + ' tomorrow.';
     }
@@ -546,10 +546,10 @@ export class HomeComponent implements OnInit {
     if(input.includes('weather') || input.includes('forecast')){
       return this.week[dayIndex] + ' will be ' + this.days[dayIndex].temperature_2m_max + 'F and ' +this.getCondition(this.days[dayIndex].weathercode, true) + ' with a ' + this.days[dayIndex].precipitation_sum + '% chance of showers.';
     }
-    if(input.includes('sunrise')){
+    if(input.includes('sunrise')|| input.includes('sun rise')){
       return 'Sunrise will be at ' + this.getTimeFormat(this.days[dayIndex].sunrise)  + ' on ' + this.week[dayIndex] + '.';
     }
-    if(input.includes('sunset')){
+    if(input.includes('sunset')|| input.includes('sun set')){
       return 'Sunset will be at ' + this.getTimeFormat(this.days[dayIndex].sunset) + ' on ' + this.week[dayIndex] + '.';
     }
     return input + ' has not been implemented yet. Type \"help\" for the list of currently supported commands.'
