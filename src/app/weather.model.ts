@@ -61,7 +61,6 @@ export class Weather {
         this.daily = daily;
     }
 }
-
 export class Hourly {
     constructor(
         public time: number,
